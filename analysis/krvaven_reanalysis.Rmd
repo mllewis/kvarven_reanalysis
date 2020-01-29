@@ -1,0 +1,161 @@
+---
+title: Kvaern data
+author: Molly Lewis 
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    number_sections: no
+    toc: yes
+---
+  
+******
+
+
+
+```{r setup, include = F}
+
+# load packages
+library(knitr)
+library(rmarkdown)
+library(tidyverse)
+library("tabulizer")
+library(janitor)
+opts_chunk$set(echo = T, message = F, warning = F, 
+               error = F, tidy = F, cache = F)
+
+make_corr_plot <- function(current_df){
+  
+  ALPHA <- .05
+  cols <- rev(colorRampPalette(c("red", "white", "blue"))(100))
+  
+  clean_df <- current_df %>%
+    select_if(is.numeric) 
+  
+  corr_mat <- cor(clean_df, 
+                  use = "pairwise.complete.obs")
+  
+  p.mat <- corrplot::cor.mtest(clean_df, 
+                               conf.level = (1-ALPHA),  
+                               use = "pairwise.complete.obs")$p
+  
+  corrplot::corrplot(corr_mat, method = "color",  col = cols,
+                     order = "original", number.cex = .7,
+                     addCoef.col = "black", 
+                     p.mat = p.mat, sig.level = ALPHA, insig = "blank", 
+                     tl.col = "black", tl.srt = 90,
+                     diag = FALSE)
+  
+}
+```
+
+```{r}
+
+meta_data <- tibble(page = c(4:6, 11:14),
+       table_name = c("original_studies",
+                      "original_MA",
+                      "replication_studies",
+                      "RE_MA",
+                      "PET-PEESE_MA",
+                      "PSM_MA",
+                      "TF_MA"))
+
+save_supp_data <- function(page_num, meta_data){
+  this_table_name <- filter(meta_data, page == page_num)  %>%
+    pull(table_name)
+  tab <- extract_tables("kvaren_supp.pdf",
+                        pages = page_num, 
+                        output = "data.frame") %>%
+    pluck(1) %>%
+    filter(X != "") %>%
+    mutate(table_name = this_table_name) %>%
+    select(table_name, everything())
+  
+  write_csv(tab, paste0("data/", this_table_name, ".csv"))
+
+}
+
+walk(meta_data$page, save_supp_data, meta_data)
+
+all_files <- list.files("data/tidy/", full.names = T) %>%
+  map_df(read_csv) %>%
+  clean_names() %>%
+  select(-converted) %>%
+  mutate(ss = str_replace_all(ss, "N = ", "")) %>%
+  separate(ss, c("n", "k"), sep = ",") %>%
+  mutate(k = str_trim(k))  %>%
+  separate(ci, c("ci_lower", "ci_upper"), sep = ", ")   %>%
+  mutate(k = as.numeric(k),
+         n = as.numeric(n),
+         ci_lower = as.numeric(ci_lower),
+         ci_upper = as.numeric(ci_upper))
+
+write_csv(all_files, "data/tidy_kvaren.csv")
+
+
+```
+
+```{r}
+
+wide_df <- all_files %>%
+  select(table_name, id, n, es) %>%
+  pivot_wider(names_from = "table_name", values_from = c(n,es)) %>%
+  select(-c(4,5,6,8))
+
+wide_df %>%
+  mutate_if(is.numeric, list(~na_if(., -Inf))) %>%
+  make_corr_plot()
+
+ggplot(wide_df, aes(x = es_replication_studies,
+                    y = es_TF_MA)) +
+  geom_point(size = 4) +
+  geom_smooth(method = "lm") +
+  theme_classic()
+
+lm(es_replication_studies ~ es_TF_MA, data = wide_df) %>%
+  summary()
+
+lm(es_replication_studies ~ es_TF_MA + n_original_MA + n_original_studies + n_replication_studies, data = wide_df) %>%
+  summary()
+
+lm(es_replication_studies ~ es_TF_MA , data = wide_df, ,weights = log(n_original_MA)) %>%
+  summary()
+
+lm(es_replication_studies ~ es_TF_MA , data = wide_df) %>%
+  summary()
+
+wide_df <- all_files %>%
+  select(table_name, id, n, es) %>%
+  pivot_wider(names_from = "table_name", values_from = c(n,es)) %>%
+  select(-c(4,5,6,8)) %>%
+  select(id, es_replication_studies, es_TF_MA, es_original_MA) %>%
+  left_join(all_files %>% filter(table_name == "replication_studies") %>%
+              select(id, ci_lower, ci_upper)) %>%
+  rename(ci_lower_es_replication = ci_lower,
+         ci_upper_es_replication = ci_upper) %>%
+  left_join(all_files %>% filter(table_name == "TF_MA") %>%
+              select(id, ci_lower, ci_upper)) %>%
+  rename(ci_lower_es_TF_MA = ci_lower,
+         ci_upper_es_TF_MA = ci_upper) %>%
+  left_join(all_files %>% filter(table_name == "original_MA") %>%
+              select(id, ci_lower, ci_upper)) %>%
+  rename(ci_lower_es_original_MA = ci_lower,
+         ci_upper_es_original_MA = ci_upper)
+
+cor.test(wide_df$es_replication_studies, wide_df$es_TF_MA)
+pdf("crit_plot.pdf")
+ggplot(wide_df, aes(y = es_replication_studies,
+                    x = es_TF_MA)) +
+  geom_errorbarh(aes(xmin = ci_lower_es_TF_MA, xmax = ci_upper_es_TF_MA, height = 0)) +
+  geom_pointrange(aes(ymin = ci_lower_es_replication, ymax = ci_upper_es_replication))+
+  ggtitle("Re-Analysis of Kvarven et al.") +
+  geom_smooth(method = "lm", alpha = .2) +
+  annotate("text", x = .9, y = -.1, label = "r = .80", size = 8, color = "red") +
+  ylab("Multi-Lab Replication Effect Size") +
+  xlab("Meta-Analytic Effect Size\n(trim-and-fill adjusted)") +
+  theme_classic(base_size = 15)
+dev.off()
+
+
+
+```

@@ -1,0 +1,17 @@
+table_name,X,X.1,Sample,Effect,X.2,X.3,X.4,X.5,X.6,X.7,Effect.size
+original_studies,ID,Reference,size,size,Standard,error,95%  CI,99.5%  CI,Z-value,p-value,converted by us
+original_studies,1,Oppenheimer et al. (2009)20,N = 106,0.23,0.138,,"-0.040, 0.500","-0.157, 0.617",1.667,0.095,No
+original_studies,2,(1981)39,N = 152,1.13,0.122,,"0.891, 1.369","0.788, 1.472",9.262,<0.001,No
+original_studies,3,Husnu & Crisp (2010)8,N = 33,0.86,0.365,,"0.145, 1.575","-0.165, 1.885",2.356,0.018,No
+original_studies,4,Schwarz et al. (1991)28,N = 50,0.48,0.207,,"0.074, 0.886","-0.101, 1.061",2.319,0.020,No
+original_studies,5,Hauser et al. (2007)6,N = 2646,0.95,0.085,,"0.783, 1.117","0.711, 1.189",11.176,< 0.001,No
+original_studies,6,Critcher & Gilovich (2008)1,N = 207,0.30,0.143,,"0.020, 0.580","-0.101, 0.701",2.098,0.036,No
+original_studies,7,(2009)4,N = 1548,0.52,0.059,,"0.404, 0.636","0.354, 0.686",8.814,<0.001,No
+original_studies,8,Jostmann et al. (2009)11,N = 51,0.597,0.293,,"0.023, 1.171","-0.225, 1.419",2.038,0.042,No
+original_studies,9,Monin & Miller (2001)18,N = 202,0.424,0.150,,"0.130, 0.718","0.003, 0.845",2.827,0.005,Yes
+original_studies,10,Schooler (1990)25,N = 117,0.498,0.169,,"0.167, 0.829","0.024, 0.972",2.947,0.003,No
+original_studies,11,Sripada et al. (2014)30,N = 108,0.29,0.293,,"-0.284, 0.864","-0.532, 1.112",0.990,0.024,No
+original_studies,12,Rand et al. (2012)22,N = 680,0.22,0.138,,"-0.050, 0.490","-0.167, 0.607",1.594,0.111,Yes
+original_studies,13,Strack et al. (1988)36,N = 92,0.46,0.245,,"-0.020, 0.940","-0.228, 1.148",1.88,0.060,Yes
+original_studies,14,Srull & Wyer (1979)34,N = 43,3.01,N/A,,N/A,N/A,N/A,N/A,No
+original_studies,15,Mazar et al. (2008)14,N = 229,0.48,0.196,,"0.096, 0.864","-0.070, 1.030",2.450,0.014,Yes

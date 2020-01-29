@@ -1,0 +1,16 @@
+table_name,ID,SS,es,SE,CI
+original_studies,1,N = 106,0.23,0.138,"-0.040, 0.500"
+original_studies,2,N = 152,1.13,0.122,"0.891, 1.369"
+original_studies,3,N = 33,0.86,0.365,"0.145, 1.575"
+original_studies,4,N = 50,0.48,0.207,"0.074, 0.886"
+original_studies,5,N = 2646,0.95,0.085,"0.783, 1.117"
+original_studies,6,N = 207,0.3,0.143,"0.020, 0.580"
+original_studies,7,N = 1548,0.52,0.059,"0.404, 0.636"
+original_studies,8,N = 51,0.597,0.293,"0.023, 1.171"
+original_studies,9,N = 202,0.424,0.15,"0.130, 0.718"
+original_studies,10,N = 117,0.498,0.169,"0.167, 0.829"
+original_studies,11,N = 108,0.29,0.293,"-0.284, 0.864"
+original_studies,12,N = 680,0.22,0.138,"-0.050, 0.490"
+original_studies,13,N = 92,0.46,0.245,"-0.020, 0.940"
+original_studies,14,N = 43,3.01,NA,NA
+original_studies,15,N = 229,0.48,0.196,"0.096, 0.864"

@@ -1,5 +1,5 @@
 ---
-title: Kvaern data
+title: Kvarven data
 author: Molly Lewis 
 date: "`r Sys.Date()`"
 output: 
@@ -19,8 +19,9 @@ output:
 library(knitr)
 library(rmarkdown)
 library(tidyverse)
-library("tabulizer")
+library(tabulizer)
 library(janitor)
+library(here)
 opts_chunk$set(echo = T, message = F, warning = F, 
                error = F, tidy = F, cache = F)
 
@@ -49,7 +50,7 @@ make_corr_plot <- function(current_df){
 }
 ```
 
-```{r}
+```{r, eval = F}
 
 meta_data <- tibble(page = c(4:6, 11:14),
        table_name = c("original_studies",
@@ -97,7 +98,10 @@ write_csv(all_files, "data/tidy_kvaren.csv")
 
 ```{r}
 
-wide_df <- all_files %>%
+TIDY_DATA_PATH <- here("data/tidy_krvaven.csv")
+tidy_data<- read_csv(TIDY_DATA_PATH)
+
+wide_df <- tidy_data %>%
   select(table_name, id, n, es) %>%
   pivot_wider(names_from = "table_name", values_from = c(n,es)) %>%
   select(-c(4,5,6,8))
@@ -106,38 +110,41 @@ wide_df %>%
   mutate_if(is.numeric, list(~na_if(., -Inf))) %>%
   make_corr_plot()
 
-ggplot(wide_df, aes(x = es_replication_studies,
-                    y = es_TF_MA)) +
+ggplot(wide_df, aes(x = es_TF_MA,
+                    y = es_replication_studies)) +
   geom_point(size = 4) +
-  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm",  formula = y ~ log(x)) +
   theme_classic()
 
 lm(es_replication_studies ~ es_TF_MA, data = wide_df) %>%
   summary()
 
-lm(es_replication_studies ~ es_TF_MA + n_original_MA + n_original_studies + n_replication_studies, data = wide_df) %>%
+lm(es_replication_studies ~ es_RE_MA , data = wide_df) %>%
   summary()
 
-lm(es_replication_studies ~ es_TF_MA , data = wide_df, ,weights = log(n_original_MA)) %>%
+lm(es_replication_studies ~ log(es_TF_MA) , data = wide_df) %>%
   summary()
 
 lm(es_replication_studies ~ es_TF_MA , data = wide_df) %>%
   summary()
 
-wide_df <- all_files %>%
+lm(es_replication_studies ~ es_original_studies , data = wide_df) %>%
+  summary()
+
+wide_df <- tidy_data %>%
   select(table_name, id, n, es) %>%
   pivot_wider(names_from = "table_name", values_from = c(n,es)) %>%
   select(-c(4,5,6,8)) %>%
   select(id, es_replication_studies, es_TF_MA, es_original_MA) %>%
-  left_join(all_files %>% filter(table_name == "replication_studies") %>%
+  left_join(tidy_data %>% filter(table_name == "replication_studies") %>%
               select(id, ci_lower, ci_upper)) %>%
   rename(ci_lower_es_replication = ci_lower,
          ci_upper_es_replication = ci_upper) %>%
-  left_join(all_files %>% filter(table_name == "TF_MA") %>%
+  left_join(tidy_data %>% filter(table_name == "TF_MA") %>%
               select(id, ci_lower, ci_upper)) %>%
   rename(ci_lower_es_TF_MA = ci_lower,
          ci_upper_es_TF_MA = ci_upper) %>%
-  left_join(all_files %>% filter(table_name == "original_MA") %>%
+  left_join(tidy_data %>% filter(table_name == "original_MA") %>%
               select(id, ci_lower, ci_upper)) %>%
   rename(ci_lower_es_original_MA = ci_lower,
          ci_upper_es_original_MA = ci_upper)

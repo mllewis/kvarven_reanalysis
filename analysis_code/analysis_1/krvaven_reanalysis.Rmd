@@ -50,119 +50,371 @@ make_corr_plot <- function(current_df){
 }
 ```
 
-```{r, eval = F}
 
-meta_data <- tibble(page = c(4:6, 11:14),
-       table_name = c("original_studies",
-                      "original_MA",
-                      "replication_studies",
-                      "RE_MA",
-                      "PET-PEESE_MA",
-                      "PSM_MA",
-                      "TF_MA"))
+```{r}
+TIDY_DATA_PATH <- here("data/analysis_1/tidy_krvaven.csv")
+tidy_data<- read_csv(TIDY_DATA_PATH)
 
-save_supp_data <- function(page_num, meta_data){
-  this_table_name <- filter(meta_data, page == page_num)  %>%
-    pull(table_name)
-  tab <- extract_tables("kvaren_supp.pdf",
-                        pages = page_num, 
-                        output = "data.frame") %>%
-    pluck(1) %>%
-    filter(X != "") %>%
-    mutate(table_name = this_table_name) %>%
-    select(table_name, everything())
-  
-  write_csv(tab, paste0("data/", this_table_name, ".csv"))
-
-}
-
-walk(meta_data$page, save_supp_data, meta_data)
-
-all_files <- list.files("data/tidy/", full.names = T) %>%
-  map_df(read_csv) %>%
-  clean_names() %>%
-  select(-converted) %>%
-  mutate(ss = str_replace_all(ss, "N = ", "")) %>%
-  separate(ss, c("n", "k"), sep = ",") %>%
-  mutate(k = str_trim(k))  %>%
-  separate(ci, c("ci_lower", "ci_upper"), sep = ", ")   %>%
-  mutate(k = as.numeric(k),
-         n = as.numeric(n),
-         ci_lower = as.numeric(ci_lower),
-         ci_upper = as.numeric(ci_upper))
-
-write_csv(all_files, "data/tidy_kvaren.csv")
-
+wide_df_full <- tidy_data %>%
+  select(table_name, id, n, es) %>%
+  pivot_wider(names_from = "table_name", values_from = c(n, es)) %>% 
+  select(id, es_original_studies, es_replication_studies, es_RE_MA,
+         "es_PET-PEESE_MA", es_PSM_MA, es_TF_MA)  %>%
+  left_join(tidy_data %>% filter(table_name == "original_MA") %>%
+              select(id, tau)) %>%
+  mutate(tau2 = tau,
+         tau = sqrt(tau2),
+         log_tau2 = log(tau2 + .0001))
 
 ```
 
+## Pairwise correlations{.tabset}
+### All MAs
 ```{r}
-
-TIDY_DATA_PATH <- here("data/tidy_krvaven.csv")
-tidy_data<- read_csv(TIDY_DATA_PATH)
-
-wide_df <- tidy_data %>%
-  select(table_name, id, n, es) %>%
-  pivot_wider(names_from = "table_name", values_from = c(n,es)) %>%
-  select(-c(4,5,6,8))
-
-wide_df %>%
-  mutate_if(is.numeric, list(~na_if(., -Inf))) %>%
+wide_df_full %>%
+  select(-id) %>%
   make_corr_plot()
+```
 
-ggplot(wide_df, aes(x = es_TF_MA,
-                    y = es_replication_studies)) +
-  geom_point(size = 4) +
-  geom_smooth(method = "lm",  formula = y ~ log(x)) +
-  theme_classic()
+Some evidence that a replication effect size is bigger when the corresponding meta-analysis is hetergeneous.
 
-lm(es_replication_studies ~ es_TF_MA, data = wide_df) %>%
-  summary()
+### Excluding Srull & Wyer (1979)
+One effect - Srull & Wyer (1979) - has a massive original effect size (~3) that strongly influences the magnitude of the correlations with the original es. Here's what the correlations look like when you exclue this point. 
+```{r}
+wide_df_full %>%
+  filter(id != 14) %>%
+  select(-id) %>%
+  make_corr_plot()
+```
 
-lm(es_replication_studies ~ es_RE_MA , data = wide_df) %>%
-  summary()
 
-lm(es_replication_studies ~ log(es_TF_MA) , data = wide_df) %>%
-  summary()
 
-lm(es_replication_studies ~ es_TF_MA , data = wide_df) %>%
-  summary()
-
-lm(es_replication_studies ~ es_original_studies , data = wide_df) %>%
-  summary()
-
+## Pairwise plots
+```{r}
+# wide df of original, ma, and replication with n and es, and cis for es
 wide_df <- tidy_data %>%
   select(table_name, id, n, es) %>%
-  pivot_wider(names_from = "table_name", values_from = c(n,es)) %>%
-  select(-c(4,5,6,8)) %>%
-  select(id, es_replication_studies, es_TF_MA, es_original_MA) %>%
+  pivot_wider(names_from = "table_name", 
+              values_from = c(n, es)) %>%
+  mutate(n_RE_MA = n_original_MA) %>%
+  select(id, n_replication_studies, n_original_studies, n_RE_MA,
+         es_replication_studies, es_original_studies, es_RE_MA) %>%
   left_join(tidy_data %>% filter(table_name == "replication_studies") %>%
               select(id, ci_lower, ci_upper)) %>%
   rename(ci_lower_es_replication = ci_lower,
          ci_upper_es_replication = ci_upper) %>%
-  left_join(tidy_data %>% filter(table_name == "TF_MA") %>%
+  left_join(tidy_data %>% filter(table_name == "RE_MA") %>%
               select(id, ci_lower, ci_upper)) %>%
-  rename(ci_lower_es_TF_MA = ci_lower,
-         ci_upper_es_TF_MA = ci_upper) %>%
+  rename(ci_lower_es_RE_MA = ci_lower,
+         ci_upper_es_RE_MA = ci_upper) %>%
+  left_join(tidy_data %>% filter(table_name == "original_studies") %>%
+              select(id, ci_lower, ci_upper)) %>%
+  rename(ci_lower_es_original_study = ci_lower,
+         ci_upper_es_original_study = ci_upper) %>%
   left_join(tidy_data %>% filter(table_name == "original_MA") %>%
-              select(id, ci_lower, ci_upper)) %>%
-  rename(ci_lower_es_original_MA = ci_lower,
-         ci_upper_es_original_MA = ci_upper)
+              select(id, tau)) %>%
+  mutate(tau2 = tau, 
+         tau = sqrt(tau2),
+         log_tau2 = log(tau2 + .0001))
+```
 
-cor.test(wide_df$es_replication_studies, wide_df$es_TF_MA)
-pdf("crit_plot.pdf")
+### All MAs{.tabset}
+#### Replication vs. MA (RE)
+```{r}
+rep_ma <- cor.test(wide_df$es_RE_MA, 
+                   wide_df$es_replication_studies)
+
 ggplot(wide_df, aes(y = es_replication_studies,
-                    x = es_TF_MA)) +
-  geom_errorbarh(aes(xmin = ci_lower_es_TF_MA, xmax = ci_upper_es_TF_MA, height = 0)) +
-  geom_pointrange(aes(ymin = ci_lower_es_replication, ymax = ci_upper_es_replication))+
+                    x = es_RE_MA)) +
+  geom_errorbarh(aes(xmin = ci_lower_es_RE_MA, 
+                     xmax = ci_upper_es_RE_MA, height = 0)) +
+  geom_pointrange(aes(ymin = ci_lower_es_replication, 
+                      ymax = ci_upper_es_replication))+
+  geom_abline(intercept = 0, slope = 1, linetype = 2) +
   ggtitle("Re-Analysis of Kvarven et al.") +
   geom_smooth(method = "lm", alpha = .2) +
-  annotate("text", x = .9, y = -.1, label = "r = .80", size = 8, color = "red") +
+  ylim(-.3, 1.2) +
+   annotate("text", x = .9, y = -.1, 
+           label = paste0("r = ", round(rep_ma$estimate,2)), 
+           size = 8, color = "red") +
   ylab("Multi-Lab Replication Effect Size") +
-  xlab("Meta-Analytic Effect Size\n(trim-and-fill adjusted)") +
+  xlab("Meta-Analytic Random Effect Effect Size") +
   theme_classic(base_size = 15)
-dev.off()
+```
+
+
+#### Replication vs. Original
+```{r}
+original_ma <- cor.test(wide_df$es_original_studies,
+                        wide_df$es_replication_studies)
+
+wide_df %>%
+  ggplot( aes(y = es_replication_studies,
+                    x = es_original_studies)) +
+  geom_pointrange(aes(ymin = ci_lower_es_replication, 
+                      ymax = ci_upper_es_replication)) +
+  geom_errorbarh(aes(xmin = ci_lower_es_original_study, 
+                     xmax = ci_upper_es_original_study, height = 0)) +
+  geom_abline(intercept = 0, slope = 1, linetype = 2) +
+  ylim(-.3, 1.2) +
+  ggtitle("Re-Analysis of Kvarven et al.") +
+  geom_smooth(method = "lm", alpha = .2) +
+  annotate("text", x = .9, y = -.1, 
+           label = paste0("r = ", round(original_ma$estimate,2)), 
+           size = 8, color = "red") +  
+  ylab("Multi-Lab Replication Effect Size") +
+  xlab("Original Study Effect Size") +
+  theme_classic(base_size = 15)
+```
+
+### Excluding Srull & Wyer (1979){.tabset}
+```{r}
+wide_df_excl <- wide_df %>%
+  filter(id != 14)
+```
+
+#### Replication vs. MA (RE)
+```{r}
+rep_ma_excl <- cor.test(wide_df_excl$es_RE_MA, wide_df_excl$es_replication_studies)
+
+ggplot(wide_df_excl, aes(y = es_replication_studies,
+                    x = es_RE_MA)) +
+  geom_errorbarh(aes(xmin = ci_lower_es_RE_MA, 
+                     xmax = ci_upper_es_RE_MA, height = 0)) +
+  geom_pointrange(aes(ymin = ci_lower_es_replication, 
+                      ymax = ci_upper_es_replication))+
+  geom_abline(intercept = 0, slope = 1, linetype = 2) +
+  ggtitle("Re-Analysis of Kvarven et al.") +
+  geom_smooth(method = "lm", alpha = .2) +
+  ylim(-.3, 1.2) +
+  annotate("text", x = .9, y = -.1, 
+           label = paste0("r = ", round(rep_ma_excl$estimate,2)), 
+           size = 8, color = "red") +
+  ylab("Multi-Lab Replication Effect Size") +
+  xlab("Meta-Analytic Random Effect Effect Size") +
+  theme_classic(base_size = 15)
+```
+
+
+#### Replication vs. Original
+```{r}
+original_ma_excl <- cor.test(wide_df_excl$es_original_studies,          wide_df_excl$es_replication_studies)
+
+wide_df_excl %>%
+  ggplot( aes(y = es_replication_studies,
+                    x = es_original_studies)) +
+  geom_pointrange(aes(ymin = ci_lower_es_replication, 
+                      ymax = ci_upper_es_replication)) +
+  geom_errorbarh(aes(xmin = ci_lower_es_original_study, 
+                     xmax = ci_upper_es_original_study, height = 0)) +
+  geom_abline(intercept = 0, slope = 1, linetype = 2) +
+  ggtitle("Re-Analysis of Kvarven et al.") +
+  geom_smooth(method = "lm", alpha = .2) +
+  ylim(-.3, 1.2) +
+  annotate("text", x = .9, y = -.1, 
+           label = paste0("r = ", round(original_ma_excl$estimate,2)), 
+           size = 8, color = "red") +  
+  ylab("Multi-Lab Replication Effect Size") +
+  xlab("Original Study Effect Size") +
+  theme_classic(base_size = 15)
+```
+
+### Tau2 vs. replication effect size
+
+```{r}
+wide_df %>%
+  ggplot( aes(y = es_replication_studies,
+                    x = log_tau2)) +
+  geom_pointrange(aes(ymin = ci_lower_es_replication, 
+                      ymax = ci_upper_es_replication)) +
+  ggtitle("Re-Analysis of Kvarven et al.") +
+  geom_smooth(method = "lm", alpha = .2) +
+  ylab("Multi-Lab Replication Effect Size") +
+  xlab("log Tau2") +
+  theme_classic(base_size = 15)
+```
+
+## ES Differences Plots{.tabset}
+Comparing replication minus MA estimate vs. replicaiton minus original estimate. Note: this is just the simple difference, but we probably want a model that takes into account the sample sizes for each effect. I think they did some version of this in the paper, but I can't figure out what they did.
+
+### All 
+```{r}
+es_diffs <- wide_df %>%
+  select(id, contains("es_"), contains("tau"),
+         -contains("ci")) %>%
+  mutate(abs_dif_original = abs(es_replication_studies - es_original_studies),
+         abs_dif_ma = abs(es_replication_studies - es_RE_MA),
+         dif_original = es_replication_studies - es_original_studies,
+         dif_ma = es_replication_studies - es_RE_MA) %>%
+  select(id, contains("dif"), contains("tau"))
+```
+
+```{r}
+es_diffs %>%
+  select(-id) %>%
+  make_corr_plot()
+```
+
+```{r}
+es_diffs_long <- es_diffs %>%
+    pivot_longer(-id, names_to = "measure", 
+                 values_to = "es_dif") %>%
+    filter(!(measure %in% c("tau", "log_tau2", "tau2",
+                            "abs_dif_ma",
+                            "abs_dif_original")))
+
+mean_diffs <- es_diffs_long %>%
+  group_by(measure) %>%
+  summarize(mean  = mean(es_dif),
+            sd  = sd(es_dif),
+            n = n(),
+            ci_95_range = 1.96  * sd/sqrt(n),
+            ci_lower = mean - ci_95_range,
+            ci_upper = mean + ci_95_range) %>%
+  mutate(y = c(2.5, 2.4))
+
+ggplot(es_diffs_long)  +
+  geom_density(aes(fill = measure, x = es_dif), alpha = .5) +
+  geom_point(data = mean_diffs, aes(x = mean, y = y, 
+                                    color = measure), 
+             size = 3) +
+  geom_errorbarh(data = mean_diffs, 
+                 aes(xmin = ci_lower, xmax = ci_upper, 
+                     color = measure, y = y), 
+                 height = 0, size = 1) +
+  xlab("Difference from Replication Estimate") +
+  theme_classic(base_size = 15)
+```
+
+### Excluding Srull & Wyer (1979)
+```{r}
+es_diffs_excl <- wide_df_excl %>%
+  select(id, contains("es_"), contains("tau"),
+         -contains("ci")) %>%
+  mutate(abs_dif_original = abs(es_replication_studies - es_original_studies),
+         abs_dif_ma = abs(es_replication_studies - es_RE_MA),
+         dif_original = es_replication_studies - es_original_studies,
+         dif_ma = es_replication_studies - es_RE_MA) %>%
+  select(id, contains("dif"), contains("tau")) 
+```
+
+```{r}
+es_diffs_excl %>%
+  select(-id) %>%
+  make_corr_plot()
+```
+
+
+```{r}
+es_diffs_excl_long <- es_diffs_excl %>%
+  pivot_longer(-id, names_to = "measure", 
+               values_to = "es_dif")  %>%
+  filter(!(measure %in% c("tau", "log_tau2", "tau2",
+                          "abs_dif_ma", "abs_dif_original")))
+
+mean_diffs_excl <- es_diffs_excl_long %>%
+  group_by(measure) %>%
+  summarize(mean  = mean(es_dif),
+            sd  = sd(es_dif),
+            n = n(),
+            ci_95_range = 1.96  * sd/sqrt(n),
+            ci_lower = mean - ci_95_range,
+            ci_upper = mean + ci_95_range) %>%
+  mutate(y = c(2.5, 2.4))
+
+ggplot(es_diffs_excl_long)  +
+  geom_density(aes(fill = measure, x = es_dif), alpha = .5) +
+  geom_point(data = mean_diffs_excl, aes(x = mean, y = y, 
+                                         color = measure), 
+             size = 3) +
+  geom_errorbarh(data = mean_diffs_excl, 
+                 aes(xmin = ci_lower, xmax = ci_upper, 
+                     color = measure, y = y), height = 0, size = 1) +
+  xlab("Difference from Replication Estimate") +
+  theme_classic(base_size = 15)
+```
+
+# Models{.tabset}
+## All ES
+
+```{r}
+lm(es_replication_studies ~ es_RE_MA, data = wide_df) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_original_studies, data = wide_df) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ log_tau2, data = wide_df) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_RE_MA + es_original_studies, 
+   data = wide_df) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_RE_MA + log_tau2, 
+   data = wide_df) %>%
+  summary()
+```
 
 
 
+```{r}
+lm(es_replication_studies ~ es_RE_MA + es_original_studies + log_tau2, 
+   data = wide_df) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_RE_MA + es_original_studies + tau2, 
+   data = wide_df, weights = log(n_original_studies)) %>%
+  summary()
+```
+
+
+## Excluding Excluding Srull & Wyer (1979)
+```{r}
+lm(es_replication_studies ~ es_RE_MA, data = wide_df_excl) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_original_studies, data = wide_df_excl) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ log_tau2, data = wide_df_excl) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_RE_MA + es_original_studies, 
+   data = wide_df_excl) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_RE_MA + log_tau2, 
+   data = wide_df_excl) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_RE_MA + es_original_studies + log_tau2, 
+   data = wide_df_excl) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_RE_MA + es_original_studies + log_tau2, 
+   data = wide_df_excl, weights = log(n_original_studies)) %>%
+  summary()
 ```

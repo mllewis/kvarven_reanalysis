@@ -22,6 +22,7 @@ library(tidyverse)
 library(tabulizer)
 library(janitor)
 library(here)
+library(broom)
 opts_chunk$set(echo = T, message = F, warning = F, 
                error = F, tidy = F, cache = F)
 
@@ -48,11 +49,34 @@ make_corr_plot <- function(current_df){
                      diag = FALSE)
   
 }
+
+tidy_r_to_text_r <- function(tidy_row){
+  round_tidy <- tidy_row %>%
+    mutate_at(vars(estimate, contains("conf")), round, 2)
+  
+  p_value <- case_when(pull(round_tidy, p.value) < .0001 ~ "_p_ < .0001",
+                       pull(round_tidy, p.value) < .001 ~ "_p_ < .001",
+                    #   pull(round_tidy, p.value) < .01 ~ "_p_ < .01",
+                       TRUE ~ paste0("_p_ = ", round(pull(round_tidy, p.value),3)))
+  
+  paste0(
+    "_r_(",
+    pull(round_tidy, parameter),
+    ") = ", 
+    pull(round_tidy, estimate),
+    " [",
+    pull(round_tidy, conf.low),
+    ", ",
+    pull(round_tidy, conf.high),
+    "], ",
+    p_value
+  )
+}
 ```
 
 
 ```{r}
-TIDY_DATA_PATH <- here("data/analysis_1/tidy_krvaven.csv")
+TIDY_DATA_PATH <- here("data/analysis_1/tidy_kvarven.csv")
 tidy_data<- read_csv(TIDY_DATA_PATH)
 
 wide_df_full <- tidy_data %>%
@@ -79,7 +103,7 @@ wide_df_full %>%
 Some evidence that a replication effect size is bigger when the corresponding meta-analysis is hetergeneous.
 
 ### Excluding Srull & Wyer (1979)
-One effect - Srull & Wyer (1979) - has a massive original effect size (~3) that strongly influences the magnitude of the correlations with the original es. Here's what the correlations look like when you exclue this point. 
+One effect - Srull & Wyer (1979) - has a massive original effect size (~3) that strongly influences the magnitude of the correlations with the original es. Here's what the correlations look like when you exclude this point. 
 ```{r}
 wide_df_full %>%
   filter(id != 14) %>%
@@ -124,24 +148,44 @@ wide_df <- tidy_data %>%
 rep_ma <- cor.test(wide_df$es_RE_MA, 
                    wide_df$es_replication_studies)
 
-ggplot(wide_df, aes(y = es_replication_studies,
+paper_fig <- ggplot(wide_df, aes(y = es_replication_studies,
                     x = es_RE_MA)) +
   geom_errorbarh(aes(xmin = ci_lower_es_RE_MA, 
                      xmax = ci_upper_es_RE_MA, height = 0)) +
-  geom_pointrange(aes(ymin = ci_lower_es_replication, 
+  geom_linerange(aes(ymin = ci_lower_es_replication, 
                       ymax = ci_upper_es_replication))+
+  geom_point(size = 1.5) +
+  #  geom_point( aes(size = log(n_RE_MA))) +
+
+  #geom_label(aes(label = id) )+
   geom_abline(intercept = 0, slope = 1, linetype = 2) +
-  ggtitle("Re-Analysis of Kvarven et al.") +
-  geom_smooth(method = "lm", alpha = .2) +
+  #ggtitle("Re-Analysis of Kvarven et al.") +
+  geom_smooth(method = "lm", alpha = .1) +
   ylim(-.3, 1.2) +
-   annotate("text", x = .9, y = -.1, 
+   annotate("text", x = .9, y = -.15, 
            label = paste0("r = ", round(rep_ma$estimate,2)), 
-           size = 8, color = "red") +
+           size = 4, color = "red") +
   ylab("Multi-Lab Replication Effect Size") +
-  xlab("Meta-Analytic Random Effect Effect Size") +
-  theme_classic(base_size = 15)
+  xlab("Meta-Analytic Effect Size") +
+  theme(axis.line = element_line(size = .8)) +
+
+  theme_classic(base_size = 12)
+paper_fig
+
+cor_to_print <- tidy_r_to_text_r(tidy(rep_ma))
 ```
 
+```{r, eval = F}
+jpg(here("results/analysis_1/fig1a.png"), width = 4, height = 4)
+paper_fig
+dev.off()
+
+
+```
+
+
+
+`r cor_to_print`
 
 #### Replication vs. Original
 ```{r}
@@ -175,7 +219,7 @@ wide_df_excl <- wide_df %>%
 
 #### Replication vs. MA (RE)
 ```{r}
-rep_ma_excl <- cor.test(wide_df_excl$es_RE_MA, wide_df_excl$es_replication_studies)
+rep_ma_excl <- cor.test(wide_df_excl$es_RE_MA, wide_df_excl$es_replication_studies)  
 
 ggplot(wide_df_excl, aes(y = es_replication_studies,
                     x = es_RE_MA)) +
@@ -193,6 +237,8 @@ ggplot(wide_df_excl, aes(y = es_replication_studies,
   ylab("Multi-Lab Replication Effect Size") +
   xlab("Meta-Analytic Random Effect Effect Size") +
   theme_classic(base_size = 15)
+
+
 ```
 
 
@@ -224,7 +270,7 @@ wide_df_excl %>%
 ```{r}
 wide_df %>%
   ggplot( aes(y = es_replication_studies,
-                    x = log_tau2)) +
+                    x = tau2)) +
   geom_pointrange(aes(ymin = ci_lower_es_replication, 
                       ymax = ci_upper_es_replication)) +
   ggtitle("Re-Analysis of Kvarven et al.") +
@@ -348,7 +394,7 @@ lm(es_replication_studies ~ es_original_studies, data = wide_df) %>%
 ```
 
 ```{r}
-lm(es_replication_studies ~ log_tau2, data = wide_df) %>%
+lm(es_replication_studies ~ tau2, data = wide_df) %>%
   summary()
 ```
 
@@ -359,7 +405,13 @@ lm(es_replication_studies ~ es_RE_MA + es_original_studies,
 ```
 
 ```{r}
-lm(es_replication_studies ~ es_RE_MA + log_tau2, 
+lm(es_replication_studies ~ es_RE_MA + tau2, 
+   data = wide_df) %>%
+  summary()
+```
+
+```{r}
+lm(es_replication_studies ~ es_RE_MA + tau2, 
    data = wide_df) %>%
   summary()
 ```
@@ -367,7 +419,7 @@ lm(es_replication_studies ~ es_RE_MA + log_tau2,
 
 
 ```{r}
-lm(es_replication_studies ~ es_RE_MA + es_original_studies + log_tau2, 
+lm(es_replication_studies ~ es_RE_MA + es_original_studies + tau2, 
    data = wide_df) %>%
   summary()
 ```
@@ -391,7 +443,7 @@ lm(es_replication_studies ~ es_original_studies, data = wide_df_excl) %>%
 ```
 
 ```{r}
-lm(es_replication_studies ~ log_tau2, data = wide_df_excl) %>%
+lm(es_replication_studies ~ tau2, data = wide_df_excl) %>%
   summary()
 ```
 
@@ -402,19 +454,20 @@ lm(es_replication_studies ~ es_RE_MA + es_original_studies,
 ```
 
 ```{r}
-lm(es_replication_studies ~ es_RE_MA + log_tau2, 
+lm(es_replication_studies ~ es_RE_MA + tau2, 
    data = wide_df_excl) %>%
   summary()
 ```
 
 ```{r}
-lm(es_replication_studies ~ es_RE_MA + es_original_studies + log_tau2, 
+lm(es_replication_studies ~ es_RE_MA + es_original_studies + tau2, 
    data = wide_df_excl) %>%
   summary()
 ```
 
 ```{r}
-lm(es_replication_studies ~ es_RE_MA + es_original_studies + log_tau2, 
+lm(es_replication_studies ~ es_RE_MA + es_original_studies + tau2, 
    data = wide_df_excl, weights = log(n_original_studies)) %>%
   summary()
 ```
+

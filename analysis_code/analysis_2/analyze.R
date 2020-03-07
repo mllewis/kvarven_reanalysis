@@ -1,7 +1,7 @@
 
 
 ############################ PREP ############################
-
+ 
 # working directories containing Kvarven's data, where results will be written, and containing helper fns
 data.dir = "~/Dropbox/Personal computer/Independent studies/2020/Molly's Kvarven response/Data - Upload/Meta"
 res.dir = "~/Dropbox/Personal computer/Independent studies/2020/Molly's Kvarven response/Results from R"

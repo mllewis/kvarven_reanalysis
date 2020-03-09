@@ -28,7 +28,7 @@ setwd(code.dir)
 source("helper.R")
 
 # should we overwrite existing results and plots?
-overwrite.res = TRUE
+overwrite.res = FALSE
 overwrite.plots = FALSE
 
 if ( overwrite.res == TRUE & exists("res") ) {
@@ -62,6 +62,7 @@ pvals = list()
 
 # initialize results dataframe
 names = c( 'meta',
+           "orig.name",
            
            'Mhat.rep',
            
@@ -127,6 +128,8 @@ for ( i in 1:length(files) ) {
   # merge in replication result
   res$Mhat.rep[i] = agg$replication_s[ agg$meta == meta ]
   
+  # merge in original study name
+  res$orig.name[i] = agg$original[ agg$meta == meta ]
   
   ##### Naive Meta-Analysis ######
   m0 = rma.uni( yi = d,
@@ -350,7 +353,8 @@ res$Phat.string[ !is.na(res$Phat.below) & is.na(res$Phat.below.lo) ] = paste( ro
                                                                               sep="")
 
 # make plotting dataframe and rename for plotting joy
-dp = res %>% select( "meta",
+dp = res %>% select( "orig.name",
+                     "meta",
                      "Replications" = "Mhat.rep",
                      "Worst-case meta-analysis" = "Mhat.worst",
                      "Mhat.worst.lo",
@@ -367,7 +371,7 @@ dp = dp[ !is.na(dp$worst.ind), ]
 droplevels(dp)
 
 # order by naive estimate size
-correct.order = dp[ order(dp$`Naïve meta-analysis`), ]$meta
+correct.order = dp[ order(dp$`Naïve meta-analysis`), ]$orig.name
 
 
 # put in long form for plotting joy
@@ -387,7 +391,7 @@ dpl$Mhat.worst.lo[ dpl$var != "Worst-case meta-analysis" ] = NA
 dpl[ dpl$meta == "Belle", ]
 
 # force ordering of y-axis
-dpl$meta = factor(dpl$meta, levels = correct.order)
+dpl$orig.name = factor(dpl$orig.name, levels = correct.order)
 
 
 # decide how to scale x-axis
@@ -396,7 +400,7 @@ x.breaks = seq( x.lim[1], x.lim[2], .1 )
 
 # get the correctly-ordered Phat strings for the RHS of plot
 Phat.strings = dp[ order(dp$`Naïve meta-analysis`), ]$Phat.string
-dp[ order(dp$`Naïve meta-analysis`), ]$meta  # sanity check
+dp[ order(dp$`Naïve meta-analysis`), ]$orig.name  # sanity check: should match ordering of y-axis
 
 ##### Make Plot ######
 
@@ -438,7 +442,7 @@ shapes = c(1, 2, 124)
 # with annotations
 p = ggplot( data = dpl,
             aes( x = est,
-                 y = meta,
+                 y = orig.name,
                  color = worst.ind,
                  shape = var ) ) +
   theme_bw() +
@@ -468,7 +472,7 @@ p = ggplot( data = dpl,
             size = 3 ) +
   
   xlab("Estimated mean") +
-  ylab("Meta-analysis name") 
+  ylab("Original study ") 
 
 p
 

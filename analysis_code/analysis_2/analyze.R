@@ -29,7 +29,7 @@ source("helper.R")
 
 # should we overwrite existing results and plots?
 overwrite.res = FALSE
-overwrite.plots = FALSE
+overwrite.plots = TRUE
 
 if ( overwrite.res == TRUE & exists("res") ) {
   message("Deleting previous results")
@@ -340,6 +340,10 @@ update_result_csv( name = "Perc Phat.below > .25",
 
 ############################ MAKE FIGURE ############################
 
+##### Read Results Back In #####
+setwd(res.dir)
+res = read.csv("results_by_meta.csv")
+
 res$Phat.string = "Not estimable"
 res$Phat.string[ !is.na(res$Phat.below) ] = paste( round(100 * res$Phat.below[ !is.na(res$Phat.below) ], 0),
                                                  "% [",
@@ -355,7 +359,7 @@ res$Phat.string[ !is.na(res$Phat.below) & is.na(res$Phat.below.lo) ] = paste( ro
 # make plotting dataframe and rename for plotting joy
 dp = res %>% select( "orig.name",
                      "meta",
-                     "Replications" = "Mhat.rep",
+                     "MLR" = "Mhat.rep",
                      "Worst-case meta-analysis" = "Mhat.worst",
                      "Mhat.worst.lo",
                      "Mhat.worst.hi",
@@ -363,8 +367,8 @@ dp = res %>% select( "orig.name",
                      "Phat.string")
 
 dp$worst.ind = NA
-dp$worst.ind[ dp$`Worst-case meta-analysis` > dp$`Replications` ] = "Worst-case meta-analysis estimate \nstill exceeds MLR estimate"
-dp$worst.ind[ dp$`Worst-case meta-analysis` <= dp$`Replications` ] = "Worst-case meta-analysis estimate\ndoes not exceed MLR estimate\n"
+dp$worst.ind[ dp$`Worst-case meta-analysis` > dp$`MLR` ] = "Worst-case meta-analysis estimate \nstill exceeds MLR estimate"
+dp$worst.ind[ dp$`Worst-case meta-analysis` <= dp$`MLR` ] = "Worst-case meta-analysis estimate\ndoes not exceed MLR estimate\n"
 
 # remove the one with NA
 dp = dp[ !is.na(dp$worst.ind), ]
@@ -378,7 +382,7 @@ correct.order = dp[ order(dp$`Naïve meta-analysis`), ]$orig.name
 dpl = gather( dp,
               key = "var",
               value = "est",
-              "Replications",
+              "MLR",
               "Worst-case meta-analysis",
               # "Mhat.worst.lo",
               # "Mhat.worst.hi",

@@ -1,5 +1,5 @@
 ---
-title: Kvarven data
+title: Krvaven data
 author: Molly Lewis 
 date: "`r Sys.Date()`"
 output: 
@@ -122,7 +122,7 @@ wide_df <- tidy_data %>%
               values_from = c(n, es)) %>%
   mutate(n_RE_MA = n_original_MA) %>%
   select(id, n_replication_studies, n_original_studies, n_RE_MA,
-         es_replication_studies, es_original_studies, es_RE_MA) %>%
+         es_replication_studies, es_original_studies, es_RE_MA, es_original_MA) %>%
   left_join(tidy_data %>% filter(table_name == "replication_studies") %>%
               select(id, ci_lower, ci_upper)) %>%
   rename(ci_lower_es_replication = ci_lower,
@@ -163,8 +163,8 @@ paper_fig <- ggplot(wide_df, aes(y = es_replication_studies,
   geom_smooth(method = "lm", alpha = .1) +
   ylim(-.3, 1.2) +
    annotate("text", x = .9, y = -.15, 
-           label = paste0("r = ", round(rep_ma$estimate,2)), 
-           size = 4, color = "red") +
+           label = paste0("italic(r)==", round(rep_ma$estimate,2)), 
+           size = 4, color = "red", parse = T) +
   ylab("Multi-Lab Replication Effect Size") +
   xlab("Meta-Analytic Effect Size") +
   theme(axis.line = element_line(size = .8)) +
@@ -175,17 +175,29 @@ paper_fig
 cor_to_print <- tidy_r_to_text_r(tidy(rep_ma))
 ```
 
+
+
 ```{r, eval = F}
-jpg(here("results/analysis_1/fig1a.png"), width = 4, height = 4)
+pdf(file = here("results/analysis_1/fig1a.pdf"), width = 4, height = 4)
 paper_fig
 dev.off()
-
-
 ```
 
 
 
 `r cor_to_print`
+
+
+Compare to correlation with original MA efect size:
+```{r}
+
+rep_ma_orig <- cor.test(wide_df$es_original_MA, 
+                   wide_df$es_replication_studies)
+
+cor_to_print_orig <- tidy_r_to_text_r(tidy(rep_ma_orig))
+```
+
+`r cor_to_print_orig`
 
 #### Replication vs. Original
 ```{r}
@@ -204,8 +216,8 @@ wide_df %>%
   ggtitle("Re-Analysis of Kvarven et al.") +
   geom_smooth(method = "lm", alpha = .2) +
   annotate("text", x = .9, y = -.1, 
-           label = paste0("r = ", round(original_ma$estimate,2)), 
-           size = 8, color = "red") +  
+           label = paste0("italic(r) ==", round(original_ma$estimate,2)), 
+           size = 8, color = "red", parse = T) +  
   ylab("Multi-Lab Replication Effect Size") +
   xlab("Original Study Effect Size") +
   theme_classic(base_size = 15)
@@ -240,6 +252,12 @@ ggplot(wide_df_excl, aes(y = es_replication_studies,
 
 
 ```
+
+```{r}
+cor_to_print_exclude<- tidy_r_to_text_r(tidy(rep_ma_excl))
+```
+
+`r cor_to_print_exclude`
 
 
 #### Replication vs. Original

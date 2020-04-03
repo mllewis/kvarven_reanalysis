@@ -13,6 +13,8 @@ stimuli/*
 .Rproj.user/*
 *.DS_Store
 .DS_Store
+manuscript/kvarven_commentary_2020.log
+manuscript/Kvarven commentary.pdf
 
 resources/original_papers/*
 

@@ -481,9 +481,9 @@ p = ggplot( data = dpl,
 p
 
 setwd(res.dir)
-ggsave( filename = "forest.png",
+ggsave( filename = "forest.pdf",
         plot = p,
-        width = 10,
+        width = 11,
         height = 8,
         units = "in")
 

@@ -1,14 +1,5 @@
 
 
-############################ PREP ############################
- 
-# working directories containing Kvarven's data, where results will be written, and containing helper fns
-data.dir = "~/Dropbox/Personal computer/Independent studies/2020/Molly's Kvarven comment/data/analysis_2"
-res.dir = "~/Dropbox/Personal computer/Independent studies/2020/Molly's Kvarven comment/results/analysis_2"
-code.dir = "~/Dropbox/Personal computer/Independent studies/2020/Molly's Kvarven comment/analysis_code/analysis_2"
-
-
-
 library(metafor)
 library(weightr)
 library(PublicationBias)
@@ -23,6 +14,19 @@ library(testthat)
 library(ggplot2)
 library(tidyr)
 library(robumeta)
+library(here)
+
+############################ PREP ############################
+ 
+# working directories containing Kvarven's data, where results will be written, and containing helper fns
+data.dir = here("data/analysis_2")
+res.dir = here("results/analysis_2")
+code.dir = here("analysis_code/analysis_2")
+
+
+
+
+
 
 setwd(code.dir)
 source("helper.R")
@@ -59,7 +63,6 @@ sep.vec[10] = ","
 
 # initialize list of p-value plots
 pvals = list()
-
 # initialize results dataframe
 names = c( 'meta',
            "orig.name",
@@ -449,7 +452,7 @@ p = ggplot( data = dpl,
                  y = orig.name,
                  color = worst.ind,
                  shape = var ) ) +
-  theme_bw() +
+  theme_classic() +
   
   geom_vline( xintercept = 0,
               color = "gray",

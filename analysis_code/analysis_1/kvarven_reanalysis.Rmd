@@ -160,11 +160,14 @@ paper_fig <- ggplot(wide_df, aes(y = es_replication_studies,
   #geom_label(aes(label = id) )+
   geom_abline(intercept = 0, slope = 1, linetype = 2) +
   #ggtitle("Re-Analysis of Kvarven et al.") +
-  geom_smooth(method = "lm", alpha = .1) +
+  geom_smooth(method = "lm", se = F) +
+  geom_smooth(method = "lm", se = F, formula = y ~ 0 + x, color = "green") +
+  geom_smooth(method = "lm", se = F, formula = y ~ poly(x, 2), color = "red") +
+  #geom_smooth(se = F, color = "bkye") +
   ylim(-.3, 1.2) +
-   annotate("text", x = .9, y = -.15, 
-           label = paste0("italic(r)==", round(rep_ma$estimate,2)), 
-           size = 4, color = "red", parse = T) +
+   #annotate("text", x = .9, y = -.15, 
+   #        label = paste0("italic(r)==", round(rep_ma$estimate,2)), 
+   #        size = 4, color = "red", parse = T) +
   ylab("Multi-Lab Replication Effect Size") +
   xlab("Meta-Analytic Effect Size") +
   theme(axis.line = element_line(size = .8)) +
@@ -184,9 +187,75 @@ dev.off()
 ```
 
 
-
 `r cor_to_print`
 
+Exploring model fits: 
+```{r}
+zero_intercept <- lm(data = wide_df, es_replication_studies~ 0 + es_RE_MA) %>%
+   summary() %>%
+  pluck("adj.r.squared")
+
+simple_cor <- lm(data = wide_df, es_replication_studies ~ es_RE_MA) %>%
+  summary() %>%
+  pluck("adj.r.squared")
+
+poly <- lm(data = wide_df, es_replication_studies ~ es_RE_MA + I(es_RE_MA^2)) %>%
+  summary() %>%
+  pluck("adj.r.squared")
+
+paper_fig <- ggplot(wide_df, aes(y = es_replication_studies,
+                    x = es_RE_MA)) +
+  geom_errorbarh(aes(xmin = ci_lower_es_RE_MA, 
+                     xmax = ci_upper_es_RE_MA, height = 0)) +
+  geom_linerange(aes(ymin = ci_lower_es_replication, 
+                      ymax = ci_upper_es_replication))+
+  geom_point(size = 1.5) +
+  #  geom_point( aes(size = log(n_RE_MA))) +
+
+  #geom_label(aes(label = id) )+
+  geom_abline(intercept = 0, slope = 1, linetype = 2) +
+  #ggtitle("Re-Analysis of Kvarven et al.") +
+  geom_smooth(method = "lm", se = F) +
+  geom_smooth(method = "lm", se = F, formula = y ~ 0 + x, color = "green") +
+  geom_smooth(method = "lm", se = F, formula = y ~ poly(x, 2), color = "red") +
+  #geom_smooth(se = F, color = "bkye") +
+  ylim(-.3, 1.2) +
+  annotate("text", x = 1, y = .6, 
+           label = paste0("italic(R^2)==", round(poly,2)), 
+           size = 4, color = "red", parse = T) +
+    annotate("text", x = 1, y = .5, 
+           label = paste0("italic(R^2)==", round(simple_cor,2)), 
+           size = 4, color = "blue", parse = T) +
+    annotate("text", x = 1, y = .4, 
+           label = paste0("italic(R^2)==", round(zero_intercept,2)), 
+           size = 4, color = "green", parse = T) +
+  ylab("Multi-Lab Replication Effect Size") +
+  xlab("Meta-Analytic Effect Size") +
+  theme(axis.line = element_line(size = .8)) +
+  theme_classic(base_size = 12)
+paper_fig
+
+cor_to_print <- tidy_r_to_text_r(tidy(rep_ma))
+```
+
+
+
+```{r}
+
+zero_intercept <- lm(data = wide_df, es_replication_studies~ 0 + es_RE_MA) %>%
+   summary() %>%
+  pluck("adj.r.squared")
+
+simple_cor <- lm(data = wide_df, es_replication_studies ~ es_RE_MA) %>%
+  summary() %>%
+  pluck("adj.r.squared")
+
+
+poly <- lm(data = wide_df, es_replication_studies ~ es_RE_MA + I(es_RE_MA^2)) %>%
+  summary() %>%
+  pluck("adj.r.squared")
+
+```
 
 Compare to correlation with original MA efect size:
 ```{r}

@@ -1,5 +1,5 @@
 "","meta","orig.name","Mhat.rep","Mhat.naive","Mhat.naive.lo","Mhat.naive.hi","tau","Mhat.worst","Mhat.worst.lo","Mhat.worst.hi","Mhat.worst.error","k.nonaffirm","k.affirm","Sval.0","Sval.CI.0","Sval.error","Sval.rep","Sval.rep.error","Pdisaffirm.ratio","Phat.below","Phat.below.lo","Phat.below.hi","Phat.below.error"
-"1","Belle","Mazar et al. (2008)",-0.0399999991059303,0.426185643127996,0.281907895588291,0.570463390667702,0.157058098847431,0.104623259769732,-0.0771803177292669,0.286426837268732,NA,4,11,NA,NA,NA,NA,"argument ""favor.positive"" is missing, with no default",0,0,NA,NA,NA
+"1","Belle","Mazar et al. (2008)",-0.0399999991059303,0.426185643127996,0.281907895588291,0.570463390667702,0.157058098847431,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "2",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "3",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
 "4",NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA

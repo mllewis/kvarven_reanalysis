@@ -23,6 +23,12 @@ data.dir = here("data/analysis_2")
 res.dir = here("results/analysis_2")
 code.dir = here("analysis_code/analysis_2")
 
+# # here() points to wrong directories on MM's machine
+# # hard-code dirs instead:
+# data.dir = "~/Dropbox/Personal computer/Independent studies/2020/Molly's Kvarven comment/data/analysis_2"
+# res.dir = "~/Dropbox/Personal computer/Independent studies/2020/Molly's Kvarven comment/results/analysis_2"
+# code.dir = "~/Dropbox/Personal computer/Independent studies/2020/Molly's Kvarven comment/analysis_code/analysis_2"
+
 
 
 
@@ -32,7 +38,7 @@ setwd(code.dir)
 source("helper.R")
 
 # should we overwrite existing results and plots?
-overwrite.res = FALSE
+overwrite.res = TRUE
 overwrite.plots = TRUE
 
 if ( overwrite.res == TRUE & exists("res") ) {
@@ -104,13 +110,15 @@ names(res) = names
 
 for ( i in 1:length(files) ) {
   
-  cat( paste("\n Starting", files[i] ) )
+  cat( paste("\n ****Starting", files[i] ) )
+  
+  setwd(data.dir)
+  setwd("Meta")
   
   # d and var are always the first 2 columns, even though they are named
   #  differently
   # EXCEPT Schimmack, which uses Cohen's q and has cols in different order
   if ( files[i] != "Schimmack.csv" ) {
-    
     d = read.csv( files[i], sep = sep.vec[i] )[,1:2]
     print( names(d) )  # as a sanity check
     # standardize names
@@ -162,7 +170,6 @@ for ( i in 1:length(files) ) {
                main = meta,
                refline = 0)
     dev.off()
-    
   }
 
 
@@ -258,8 +265,7 @@ for ( i in 1:length(files) ) {
   
   ##### Proportion of Meta-Analysis True Effects Below Replication Pooled Point Estimate #####
   
-  if ( m0$tau2 > 0
-       & nrow(d) >= 10 ) {
+  if ( m0$tau2 > 0 & nrow(d) >= 10 ) {
     Phat = prop_stronger( q = res$Mhat.rep[i],
                           tail = "below",
                           dat = d,
@@ -275,6 +281,7 @@ for ( i in 1:length(files) ) {
     res$Phat.below.error[i] = "t2 is zero or k<10"
   }
   
+  cat( paste("\n ****Done", files[i] ) )
 }
 
 

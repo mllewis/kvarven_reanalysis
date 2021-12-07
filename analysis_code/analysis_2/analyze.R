@@ -328,6 +328,8 @@ res$include = ( res$Mhat.rep < res$Mhat.naive ) & ( res$k.nonaffirm > 0 )
                P2 = mean( Mhat.worst > 0 ),
                
                # compare estimate magnitudes
+               Mhat.naive.mn = mean(Mhat.naive),
+               Mhat.worst.mn = mean(Mhat.worst),
                est.diff = mean( Mhat.worst - Mhat.naive ),
                est.ratio = mean( Mhat.worst/Mhat.naive )
                )  ) 

@@ -19,6 +19,9 @@ library(here)
 ############################ PREP ############################
  
 # working directories containing Kvarven's data, where results will be written, and containing helper fns
+data.dir = 
+
+
 data.dir = here("data/analysis_2")
 res.dir = here("results/analysis_2")
 code.dir = here("analysis_code/analysis_2")
@@ -32,14 +35,12 @@ code.dir = here("analysis_code/analysis_2")
 
 
 
-
-
 setwd(code.dir)
 source("helper.R")
 
 # should we overwrite existing results and plots?
-overwrite.res = TRUE
-overwrite.plots = TRUE
+overwrite.res = FALSE
+overwrite.plots = FALSE
 
 if ( overwrite.res == TRUE & exists("res") ) {
   message("Deleting previous results")
@@ -299,7 +300,13 @@ write.csv(res, "results_by_meta.csv")
 ############################ WRITE KEY STATS TO OWN FILE ############################
 
 # confirm that all have Mhat.naive > 0, so no reversal of signs needed
-table(res$Mhat.naive>0)
+expect_equal( all(res$Mhat.naive>0), TRUE )
+
+# confirm that all had Mhat.worst < Mhat.naive 
+# relevant for the way we compare estimate sizes below
+expect_equal( all(res$Mhat.naive[ !is.na(res$Mhat.worst) ] > res$Mhat.worst[ !is.na(res$Mhat.worst) ] ),
+              TRUE )
+
 
 # among metas for which Mhat.rep < Mhat, proportion for which it's possible to
 #  shift Mhat to Mhat.rep
@@ -318,8 +325,14 @@ res$include = ( res$Mhat.rep < res$Mhat.naive ) & ( res$k.nonaffirm > 0 )
                
                # can't shift to 0
                k2 = sum( Mhat.worst > 0 ),
-               P2 = mean( Mhat.worst > 0 ) )  ) # can't shift to 0
+               P2 = mean( Mhat.worst > 0 ),
+               
+               # compare estimate magnitudes
+               est.diff = mean( Mhat.worst - Mhat.naive ),
+               est.ratio = mean( Mhat.worst/Mhat.naive )
+               )  ) 
 
+# percent that can't be shifted to various values
 update_result_csv( name = "Perc cannot shift to Mhat.rep",
                    value = t$P1 )
 update_result_csv( name = "k cannot shift to Mhat.rep",
@@ -333,8 +346,14 @@ update_result_csv( name = "Mean perc nonaffirm (all metas)",
                    value = mean( res$k.nonaffirm / (res$k.affirm + res$k.nonaffirm) ) )
 
 
+# estimate sizes
+update_result_csv( name = "Mean est.diff (all metas)",
+                   value = round( t$est.diff, 2 ) )
 
+update_result_csv( name = "Mean 100*est.ratio (all metas)",
+                   value = round( 100*t$est.ratio ) )
 
+# percentage metrics
 phatb = res$Phat.below[ !is.na(res$Phat.below) ]
 
 update_result_csv( name = "Median Phat.below",
@@ -344,7 +363,6 @@ update_result_csv( name = "Median Phat.below",
 update_result_csv( name = "Perc Phat.below > .25",
                    value = mean(phatb > .25),
                    print = TRUE )
-
 
 
 

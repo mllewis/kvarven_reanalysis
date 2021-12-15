@@ -6,3 +6,6 @@ k cannot shift to 0,12,NA
 Mean perc nonaffirm (all metas),0.490817640007802,NA
 Median Phat.below,0.19327731092437,NA
 Perc Phat.below > .25,0.357142857142857,NA
+Mean est.diff (all metas),-0.25,NA
+Mean est.ratio (all metas),0.323103453909025,NA
+Mean 100*est.ratio (all metas),32,NA

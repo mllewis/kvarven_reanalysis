@@ -19,7 +19,7 @@ output:
 library(knitr)
 library(rmarkdown)
 library(tidyverse)
-library(tabulizer)
+#library(tabulizer)
 library(janitor)
 library(here)
 library(broom)
@@ -195,8 +195,11 @@ zero_intercept <- lm(data = wide_df, es_replication_studies~ 0 + es_RE_MA) %>%
    summary() %>%
   pluck("adj.r.squared")
 
-simple_cor <- lm(data = wide_df, es_replication_studies ~ es_RE_MA) %>%
-  summary() %>%
+simple_linear_model <- lm(data = wide_df, es_replication_studies ~ es_RE_MA) %>%
+  summary()
+#MLR_ES = -0.18  +  0.80 MA_ES
+
+simple_cor <-simple_linear_model %>%
   pluck("adj.r.squared")
 
 poly <- lm(data = wide_df, es_replication_studies ~ es_RE_MA + I(es_RE_MA^2)) %>%
